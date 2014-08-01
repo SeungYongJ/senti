@@ -56,6 +56,7 @@ import edu.stanford.nlp.util.Generics;
 
 
 
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -444,12 +445,15 @@ public class SentimentPipeline {
 	             System.out.println("result :: " + result);
 	             //outputTree(System.out, sentence, outputFormats);
 	        	 
-	        	 if(check>0) //예외처리 . ? 가 문장으로 인싱되서 json 꺠짐 
+	        	 String sentPolarity = result.substring(1, 2);
+	             
+	             if(check>0) //예외처리 . ? 가 문장으로 인싱되서 json 꺠짐 
 	        		 break;
 	        	 check++;
-	                    	
+	            
+	        	 
 	         	sb.append("{\"original sentence is\":"+"\""+sentence+"\",");  //original sentence 객체 시작
-	         	
+	         	sb.append("\"sentence polarity\":"+"\""+polarityToString(Integer.parseInt(sentPolarity))+"\",");
 	         	sb.append("\"word\":["); //word 배열 시작
 	        	 
 	        	 //모든 형용사에 대하여.
@@ -687,28 +691,46 @@ public class SentimentPipeline {
 	
   public static void senti(String property)throws IOException, ClassNotFoundException{
 	  
-	  
+	  String sentiOption = "";
 	  String inputDirPath ="";
 	  String outputDirPath ="";
 	  Boolean threeClass = false;
 	  
 	  BufferedReader prop = new BufferedReader(new InputStreamReader(new FileInputStream(property),"UTF-8"));
+	  sentiOption = prop.readLine().toString().trim();
 	  inputDirPath = prop.readLine().toString().trim();
 	  outputDirPath = prop.readLine().toString().trim(); 
 	  
-	  inputDirPath = inputDirPath.substring(1, inputDirPath.length());
+	  inputDirPath = inputDirPath.substring(0, inputDirPath.length());
 	  
+	  System.out.println(sentiOption);
+	  System.out.println(inputDirPath);	
+	  System.out.println(outputDirPath);
+	  
+	  if(sentiOption.contains("-targetlist")){
+		  System.out.println("new model run");
+	  }
+	  else{ 
+		  if(prop.readLine().equalsIgnoreCase("Y"))
+			  threeClass = true;
+		  prop.close();
+		  senti_sentResult(inputDirPath, outputDirPath, threeClass);
+	    
+		  
+	  }
 
+
+  
+	  
+  }
+  public static void senti_sentResult(String inputDirPath, String outputDirPath, boolean threeClass) throws IOException, ClassNotFoundException{
+	  
 	  File outputD = new File(outputDirPath);
 	  if(!outputD.exists()){
 		  outputD.mkdir();	
 	  }
 		
 
-	  if(prop.readLine().equalsIgnoreCase("Y"))
-		  threeClass = true;
-	  
-	  prop.close();
 	  
 	  
 	  
@@ -758,8 +780,6 @@ public class SentimentPipeline {
 			
 		}
 		System.out.println("The anlysis has been done.");
-  
-	  
   }
 	public static String printTree(Tree tree, String format) {
 		StringWriter sw = new StringWriter();
@@ -768,21 +788,55 @@ public class SentimentPipeline {
 		oTreePrint.printTree(tree, pw);
 		return sw.toString().trim();
 	}
+	public static String polarityToString(int polarity){
+		
+		String a = "";
+		switch(polarity){
+		
+			case 0 : a = "strong negative";
+			break;
+			
+			case 1 : a = "negative";
+			break;
+			
+			case 2 : a = "neutral";
+			break;
+			
+			case 3 : a = "positive";
+			break;
+	 		
+			case 4 : a = "strong positive";
+			break;
+			
+	 		default:
+					a = "neutral";
+		}
+		
+		return a; 
+	
+		
+		
+		
+	}
   
   public static void main(String[] args) throws IOException, ClassNotFoundException {
 
+
+	  boolean moduleOption = false;
 	  boolean threeClass = false;
 	  String outputDirPath = ""; 
 	  String inputDirPath = "";
 
 	  if(args.length < 1){
-		  System.out.println("Invald format!\ndefine <property file> or <Input Directory Path> <Output Directory Path> (option)-threeClass");
+		  System.out.println("Invald format!\ndefine <property file> or <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
 		  System.exit(0);
 	  } else if(args.length == 1) {
+		  
+		  // if -sentence option 일 경우!
 		  File p = new File(args[0]);
 		  if(!p.exists()){
 			  
-			  System.out.println("Invald format!\ndefine <property file> or <Input Directory Path> <Output Directory Path> (option)-threeClass");
+			  System.out.println("Invald format!\ndefine <property file> or <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
 			  System.exit(0);
 		  }
 		  senti(args[0]);
@@ -790,27 +844,34 @@ public class SentimentPipeline {
 		  for(int argIndex = 0; argIndex < args.length; argIndex++){
 			  if(args[argIndex].equalsIgnoreCase("-threeClass")){
 				  if(args.length==2){
-					  System.out.println("Invald format!\njava -jar review_senti_module.jar <Input Directory Path> <Output Directory Path> (option)-threeClass");
+					  System.out.println("Invald format!\njava -jar review_senti_module.jar <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
 					  System.exit(0);
 				  }				
 				  threeClass = true;
-			  }			
+			  }	
+			  if(args[argIndex].equalsIgnoreCase("-sentence")){
+				  if(args.length==2){
+					  System.out.println("Invald format!\njava -jar review_senti_module.jar <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
+					  System.exit(0);
+				  }				
+				  moduleOption = true;
+			  }
 		  }
 
 
-		  inputDirPath = args[0];
-		  outputDirPath = args[1];
+		  inputDirPath = args[1];
+		  outputDirPath = args[2];
 
 
 		  File inputD = new File(inputDirPath);
 		  File outputD = new File(outputDirPath);
 		  if(	!inputD.exists()){
-			  System.out.println("Wrong input directory!\njava -jar review_senti_module.jar <Input Directory Path> <Output Directory Path> (option)-threeClass");
+			  System.out.println("Wrong input directory!\njava -jar review_senti_module.jar <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
 			  System.exit(0);
 		  }
 		  if(	!outputD.exists()){
 			  if(!outputD.mkdir()) {
-				  System.out.println("Wrong output directory!\njava -jar review_senti_module.jar <Input Directory Path> <Output Directory Path> (option)-threeClass");
+				  System.out.println("Wrong output directory!\njava -jar review_senti_module.jar <sentiment result option> <Input Directory Path> <Output Directory Path> (option)-threeClass");
 				  System.exit(0);
 			  }		
 		  }
